@@ -102,7 +102,7 @@ export default function SurfLevelPage() {
             </div>
             <h3 className="text-2xl font-bold text-foreground">Understanding Line</h3>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-              The line you take on a wave says a lot about your surf level – Whether you&rsquo;re a <strong>Level 1</strong> taking off and surfing straight to the beach or a <strong>Level 5</strong>, exploring all parts of the wave and even above the lip and deeper in the barrel!
+              The line you take on a wave says a lot about your surf level, Whether you're a <strong>Level 1</strong> taking off and surfing straight to the beach or a <strong>Level 5</strong>, exploring all parts of the wave and even above the lip and deeper in the barrel!
             </p>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
               Identify your level and use it as a guide to direct your surf progression to take yourself to the next level!
