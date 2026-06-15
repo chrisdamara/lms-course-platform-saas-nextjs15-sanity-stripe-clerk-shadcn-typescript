@@ -1,4 +1,4 @@
-import { Waves, Compass, Award, ShieldCheck, Play, ArrowRight } from "lucide-react";
+import { Waves, Compass, Play, ArrowRight } from "lucide-react";
 import Link from "next/link";
 
 export default function Hero() {

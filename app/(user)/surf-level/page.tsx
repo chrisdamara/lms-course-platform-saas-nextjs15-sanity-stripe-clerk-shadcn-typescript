@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { Compass, Waves, Shield, Gauge, Zap, Flame, Award, ArrowUpRight } from "lucide-react";
+import { Compass, Waves, ArrowUpRight } from "lucide-react";
 import Link from "next/link";
 
 export const metadata: Metadata = {
@@ -102,20 +102,20 @@ export default function SurfLevelPage() {
             </div>
             <h3 className="text-2xl font-bold text-foreground">Understanding Line</h3>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-              The line you take on a wave says a lot about your surf level – Whether you’re a <strong>Level 1</strong> taking off and surfing straight to the beach or a <strong>Level 5</strong>, exploring all parts of the wave and even above the lip and deeper in the barrel!
+              The line you take on a wave says a lot about your surf level – Whether you&rsquo;re a <strong>Level 1</strong> taking off and surfing straight to the beach or a <strong>Level 5</strong>, exploring all parts of the wave and even above the lip and deeper in the barrel!
             </p>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
               Identify your level and use it as a guide to direct your surf progression to take yourself to the next level!
             </p>
             <p className="text-muted-foreground text-base md:text-lg leading-relaxed">
-              Below, we outline Damara Surf’s 5 surf levels, each with key focus areas to guide your development. We’ve also recommended surfboards, wave sizes, and energy levels for surfing independently at each level.
+              Below, we outline Damara Surf&rsquo;s 5 surf levels, each with key focus areas to guide your development. We&rsquo;ve also recommended surfboards, wave sizes, and energy levels for surfing independently at each level.
             </p>
           </div>
         </div>
 
         {/* 5 Surf Levels Grid */}
         <div className="space-y-12">
-          <h2 className="text-3xl font-black tracking-tight text-center">Damara Surf's 5 Levels</h2>
+          <h2 className="text-3xl font-black tracking-tight text-center">Damara Surf&rsquo;s 5 Levels</h2>
           
           <div className="grid grid-cols-1 gap-8">
             {surfLevels.map((lvl) => (

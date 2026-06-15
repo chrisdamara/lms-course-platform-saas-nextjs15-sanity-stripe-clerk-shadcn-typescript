@@ -79,7 +79,7 @@ export default async function Home() {
               <div key={course._id} className="hover:scale-[1.02] transition-transform duration-300">
                 <CourseCard
                   course={course}
-                  href={`/courses/${course.slug?.current}`}
+                  href={course.slug ? `/courses/${course.slug}` : "/courses"}
                 />
               </div>
             ))}
@@ -103,7 +103,7 @@ export default async function Home() {
             <div className="relative">
               <Quote className="absolute -top-6 -left-6 h-12 w-12 text-primary/10" />
               <p className="text-2xl md:text-3xl font-medium tracking-tight text-foreground relative z-10 italic">
-                "Damara Surf Tutorials transformed my popup technique in less than a week. The video analysis and detailed wave dynamics lectures are second to none!"
+                &quot;Damara Surf Tutorials transformed my popup technique in less than a week. The video analysis and detailed wave dynamics lectures are second to none!&quot;
               </p>
             </div>
 
