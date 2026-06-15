@@ -20,7 +20,7 @@ export default function Header() {
             >
               <BookOpen className="h-6 w-6 text-primary" />
               <span className="text-xl font-bold bg-gradient-to-r from-primary/90 to-primary bg-clip-text text-transparent">
-                Courselly
+                Damara Surf Tutorials
               </span>
             </Link>
 
@@ -28,7 +28,7 @@ export default function Header() {
           </div>
 
           <div className="flex items-center space-x-2 md:space-x-4">
-            <nav>
+            <nav className="flex items-center gap-2">
               <Link
                 prefetch={false}
                 href="/my-courses"
@@ -36,6 +36,20 @@ export default function Header() {
               >
                 <BookMarkedIcon className="h-4 w-4" />
                 <span className="hidden md:block">My Courses</span>
+              </Link>
+              <Link
+                prefetch={false}
+                href="/surf-level"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors md:border md:border-border md:rounded-md md:px-4 md:py-2"
+              >
+                Surf Level
+              </Link>
+              <Link
+                prefetch={false}
+                href="/video-analysis"
+                className="text-sm font-medium text-muted-foreground hover:text-foreground transition-colors md:border md:border-border md:rounded-md md:px-4 md:py-2"
+              >
+                Video Analysis
               </Link>
             </nav>
 
