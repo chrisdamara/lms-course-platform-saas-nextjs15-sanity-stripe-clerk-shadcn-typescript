@@ -136,7 +136,7 @@ export default function SurfLevelPage() {
 
             <p className="text-muted-foreground">
               The line you take on a wave says a lot about your surf level,
-              whether you're a Level 1 riding straight in or a Level 5 exploring
+              whether you&apos;re a Level 1 riding straight in or a Level 5 exploring
               the full wave.
             </p>
 
@@ -146,7 +146,7 @@ export default function SurfLevelPage() {
             </p>
 
             <p className="text-muted-foreground">
-              Damara Surf's 5 levels outline progression, equipment, and wave
+              Damara Surf&rsquo;s 5 levels outline progression, equipment, and wave
               requirements for each stage.
             </p>
           </div>
@@ -155,7 +155,7 @@ export default function SurfLevelPage() {
         {/* Levels */}
         <div className="space-y-12">
           <h2 className="text-3xl font-black text-center">
-            Damara Surf’s 5 Levels
+            Damara Surf&rsquo;s 5 Levels
           </h2>
 
           <div className="grid grid-cols-1 gap-8">
