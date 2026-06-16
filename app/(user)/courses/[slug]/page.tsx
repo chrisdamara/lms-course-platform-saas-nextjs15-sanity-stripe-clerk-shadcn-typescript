@@ -5,18 +5,57 @@ import { ArrowLeft, BookOpen } from "lucide-react";
 import EnrollButton from "@/components/EnrollButton";
 import getCourseBySlug from "@/sanity/lib/courses/getCourseBySlug";
 import { isEnrolledInCourse } from "@/sanity/lib/student/isEnrolledInCourse";
+import { getStudentByClerkId } from "@/sanity/lib/student/getStudentByClerkId";
+import { createEnrollment } from "@/sanity/lib/student/createEnrollment";
 import { auth } from "@clerk/nextjs/server";
+import stripe from "@/lib/stripe";
 
 interface CoursePageProps {
   params: Promise<{
     slug: string;
   }>;
+  searchParams?: {
+    session_id?: string | string[];
+    canceled?: string | string[];
+  };
 }
 
-export default async function CoursePage({ params }: CoursePageProps) {
+export default async function CoursePage({ params, searchParams }: CoursePageProps) {
   const { slug } = await params;
   const course = await getCourseBySlug(slug);
   const { userId } = await auth();
+  const sessionId =
+    typeof searchParams?.session_id === "string"
+      ? searchParams.session_id
+      : undefined;
+
+  if (course && userId && sessionId) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(sessionId);
+      const metadataCourseId = session.metadata?.courseId;
+      const metadataUserId = session.metadata?.userId;
+
+      if (
+        session.payment_status === "paid" &&
+        metadataCourseId === course._id &&
+        metadataUserId === userId
+      ) {
+        const student = await getStudentByClerkId(userId);
+        const isAlreadyEnrolled = await isEnrolledInCourse(userId, course._id);
+
+        if (student.data && !isAlreadyEnrolled) {
+          await createEnrollment({
+            studentId: student.data._id,
+            courseId: course._id,
+            paymentId: session.id,
+            amount: (session.amount_total ?? 0) / 100,
+          });
+        }
+      }
+    } catch (error) {
+      console.error("Error confirming checkout session on course page:", error);
+    }
+  }
 
   const isEnrolled =
     userId && course?._id
