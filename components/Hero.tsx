@@ -68,7 +68,7 @@ export default function Hero() {
               </div>
               <div>
                 <p className="text-2xl md:text-3xl font-bold text-foreground">
-                  99.4%
+                  99.6%
                 </p>
                 <p className="text-xs text-muted-foreground">
                   Satisfaction Rate
