@@ -14,20 +14,18 @@ interface CoursePageProps {
   params: Promise<{
     slug: string;
   }>;
-  searchParams?: {
-    session_id?: string | string[];
-    canceled?: string | string[];
-  };
+  searchParams?: Promise<{
+    session_id?: string;
+    canceled?: string;
+  }>;
 }
 
 export default async function CoursePage({ params, searchParams }: CoursePageProps) {
   const { slug } = await params;
+  const resolvedSearchParams = await searchParams;
   const course = await getCourseBySlug(slug);
   const { userId } = await auth();
-  const sessionId =
-    typeof searchParams?.session_id === "string"
-      ? searchParams.session_id
-      : undefined;
+  const sessionId = resolvedSearchParams?.session_id;
 
   if (course && userId && sessionId) {
     try {
