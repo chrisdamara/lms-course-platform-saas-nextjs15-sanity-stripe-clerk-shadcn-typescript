@@ -1,6 +1,5 @@
 const baseUrl =
-  process.env.NODE_ENV === "production"
-    ? `https://${process.env.VERCEL_URL}` || process.env.NEXT_PUBLIC_BASE_URL
-    : process.env.NEXT_PUBLIC_BASE_URL || "https://lms-course-platform-saas-nextjs15-s-orpin.vercel.app/";
+  process.env.NEXT_PUBLIC_BASE_URL ||
+  (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : "http://localhost:3000");
 
 export default baseUrl;
