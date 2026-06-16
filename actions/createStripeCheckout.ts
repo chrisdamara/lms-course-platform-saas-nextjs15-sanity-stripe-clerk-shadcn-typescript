@@ -11,21 +11,36 @@ import { createEnrollment } from "@/sanity/lib/student/createEnrollment";
 
 export async function createStripeCheckout(courseId: string, userId: string) {
   try {
+    console.log("=== Starting createStripeCheckout ===");
+    console.log("courseId:", courseId);
+    console.log("userId:", userId);
+    console.log("baseUrl:", baseUrl);
+
     // 1. Query course details from Sanity
+    console.log("Fetching course from Sanity...");
     const course = await getCourseById(courseId);
-    const clerkUser = await (await clerkClient()).users.getUser(userId);
+    console.log("Course fetched:", course ? "SUCCESS" : "FAILED");
+
+    console.log("Fetching Clerk user...");
+    const clerkClientInstance = await clerkClient();
+    const clerkUser = await clerkClientInstance.users.getUser(userId);
+    console.log("Clerk user fetched:", clerkUser ? "SUCCESS" : "FAILED");
+    
     const { emailAddresses, firstName, lastName, imageUrl } = clerkUser;
-    const email = emailAddresses[0]?.emailAddress;
+    const email = emailAddresses?.[0]?.emailAddress || clerkUser.primaryEmailAddress?.emailAddress;
 
     if (!emailAddresses || !email) {
+      console.error("User details not found");
       throw new Error("User details not found");
     }
 
     if (!course) {
+      console.error("Course not found");
       throw new Error("Course not found");
     }
 
     // mid step - create a user in sanity if it doesn't exist
+    console.log("Creating/fetching student in Sanity...");
     const user = await createStudentIfNotExists({
       clerkId: userId,
       email: email || "",
@@ -33,19 +48,25 @@ export async function createStripeCheckout(courseId: string, userId: string) {
       lastName: lastName || "",
       imageUrl: imageUrl || "",
     });
+    console.log("Student:", user ? "SUCCESS" : "FAILED");
 
     if (!user) {
+      console.error("User not found after creation");
       throw new Error("User not found");
     }
 
     // 2. Validate course data and prepare price for Stripe
+    console.log("Course price:", course.price);
     if (!course.price && course.price !== 0) {
+      console.error("Course price is not set");
       throw new Error("Course price is not set");
     }
     const priceInCents = Math.round(course.price * 100);
+    console.log("Price in cents:", priceInCents);
 
     // if course is free, create enrollment and redirect to course page (BYPASS STRIPE CHECKOUT)
     if (priceInCents === 0) {
+      console.log("Free course - creating enrollment directly");
       await createEnrollment({
         studentId: user._id,
         courseId: course._id,
@@ -59,10 +80,14 @@ export async function createStripeCheckout(courseId: string, userId: string) {
     const { title, description, image, slug } = course;
 
     if (!title || !description || !image || !slug) {
+      console.error("Course data incomplete:", { title, description, hasImage: !!image, slug });
       throw new Error("Course data is incomplete");
     }
 
     // 3. Create and configure Stripe Checkout Session with course details
+    console.log("Creating Stripe checkout session...");
+    console.log("Stripe key exists:", !!process.env.STRIPE_SECRET_KEY);
+    
     const session = await stripe.checkout.sessions.create({
       line_items: [
         {
@@ -87,10 +112,19 @@ export async function createStripeCheckout(courseId: string, userId: string) {
       },
     });
 
+    console.log("Stripe session created:", session.id);
+    console.log("Session URL:", session.url);
+
     // 4. Return checkout session URL for client redirect
     return { url: session.url };
   } catch (error) {
-    console.error("Error in createStripeCheckout:", error);
-    throw new Error("Failed to create checkout session");
+    console.error("=== ERROR in createStripeCheckout ===");
+    console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);
+    console.error("Error message:", error instanceof Error ? error.message : String(error));
+    console.error("Full error:", error);
+    if (error instanceof Error && error.stack) {
+      console.error("Stack trace:", error.stack);
+    }
+    throw error;
   }
 }
