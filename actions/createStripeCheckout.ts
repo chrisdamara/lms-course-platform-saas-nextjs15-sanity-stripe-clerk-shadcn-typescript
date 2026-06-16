@@ -79,9 +79,22 @@ export async function createStripeCheckout(courseId: string, userId: string) {
 
     const { title, description, image, slug } = course;
 
-    if (!title || !description || !image || !slug) {
-      console.error("Course data incomplete:", { title, description, hasImage: !!image, slug });
-      throw new Error("Course data is incomplete");
+    if (!title || !slug?.current) {
+      console.error("Course minimal data incomplete:", { title, slug });
+      throw new Error("Course title or slug is missing");
+    }
+
+    const productData: any = {
+      name: title,
+    };
+
+    if (description) {
+      productData.description = description;
+    }
+
+    const courseImageUrl = image ? urlFor(image).url() : undefined;
+    if (courseImageUrl) {
+      productData.images = [courseImageUrl];
     }
 
     // 3. Create and configure Stripe Checkout Session with course details
@@ -93,11 +106,7 @@ export async function createStripeCheckout(courseId: string, userId: string) {
         {
           price_data: {
             currency: "usd",
-            product_data: {
-              name: title,
-              description: description,
-              images: [urlFor(image).url() || ""],
-            },
+            product_data: productData,
             unit_amount: priceInCents,
           },
           quantity: 1,
