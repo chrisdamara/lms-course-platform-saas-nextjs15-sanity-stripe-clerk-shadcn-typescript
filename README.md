@@ -320,14 +320,6 @@ This project was built as part of the [Zero to Full Stack Hero](https://www.papa
 
 [Join Zero to Full Stack Hero Today!](https://www.papareact.com/course)
 
-## Support
-
-For support, join our Discord community or email support@example.com
-
-## License
-
-This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details
-
 ---
 
 Built with ❤️ using Next.js, Sanity, Clerk, and Stripe
