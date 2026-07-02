@@ -69,7 +69,7 @@ export async function createStripeCheckout(courseId: string, userId: string) {
       console.log("Free course - creating enrollment directly");
       await createEnrollment({
         studentId: user._id,
-        courseId: course._id,
+        courseIds: [course._id],
         paymentId: "free",
         amount: 0,
       });

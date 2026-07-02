@@ -44,7 +44,7 @@ export default async function CoursePage({ params, searchParams }: CoursePagePro
         if (student.data && !isAlreadyEnrolled) {
           await createEnrollment({
             studentId: student.data._id,
-            courseId: course._id,
+            courseIds: [course._id],
             paymentId: session.id,
             amount: (session.amount_total ?? 0) / 100,
           });
