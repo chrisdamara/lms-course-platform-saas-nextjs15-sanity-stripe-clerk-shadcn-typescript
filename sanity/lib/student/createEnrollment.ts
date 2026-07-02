@@ -2,27 +2,26 @@ import { client } from "../adminClient";
 
 interface CreateEnrollmentParams {
   studentId: string;
-  courseId: string;
+  courseIds: string[];
   paymentId: string;
   amount: number;
 }
 
 export async function createEnrollment({
   studentId,
-  courseId,
+  courseIds,
   paymentId,
   amount,
 }: CreateEnrollmentParams) {
-  return client.create({
+  const courses = courseIds.map(id => { return { _ref: id, _type: "reference" } })
+
+    return client.create({
     _type: "enrollment",
     student: {
       _type: "reference",
       _ref: studentId,
     },
-    course: {
-      _type: "reference",
-      _ref: courseId,
-    },
+    courses,
     paymentId,
     amount,
     enrolledAt: new Date().toISOString(),

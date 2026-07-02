@@ -13,13 +13,13 @@ export const enrollmentType = defineType({
       to: [{ type: "student" }],
       validation: (rule) => rule.required(),
     }),
-    defineField({
-      name: "course",
-      title: "Course",
-      type: "reference",
-      to: [{ type: "course" }],
-      validation: (rule) => rule.required(),
-    }),
+      defineField({
+       name: "courses",
+       title: "Courses",
+       type: "array",
+       of: [{ type: "reference" , to: [{ type: "course" }] }],
+       validation: (rule) => rule.required().min(1),
+      }),
     defineField({
       name: "amount",
       title: "Amount",
@@ -43,15 +43,16 @@ export const enrollmentType = defineType({
   ],
   preview: {
     select: {
-      courseTitle: "course.title",
+      courses: "courses",
       studentFirstName: "student.firstName",
       studentLastName: "student.lastName",
       studentImage: "student.imageUrl",
     },
-    prepare({ courseTitle, studentFirstName, studentLastName, studentImage }) {
-      return {
+    prepare({ courses, studentFirstName, studentLastName, studentImage }) {
+      const courseTitles = courses.map((c: { title: string }) => c.title).join(", ") || "No courses yet"
+        return {
         title: `${studentFirstName} ${studentLastName}`,
-        subtitle: courseTitle,
+        subtitle: courseTitles,
         media: (
           <Image
             src={studentImage}

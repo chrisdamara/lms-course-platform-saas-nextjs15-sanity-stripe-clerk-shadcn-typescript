@@ -11,7 +11,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: Request) {
-  try {
+  // TODO: need to implement courseId as an array to accommodate the changes made on the multiple-courses-on-enrollment branch
+    // see branch accommodate-multiple-course-purchase-in-stripe-checkou
+    try {
     const body = await req.text();
     const headersList = await headers();
     const signature = headersList.get("stripe-signature");
@@ -33,7 +35,6 @@ export async function POST(req: Request) {
         status: 400,
       });
     }
-
     // Handle the checkout.session.completed event
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
@@ -53,9 +54,9 @@ export async function POST(req: Request) {
       }
 
       // Create an enrollment record in Sanity
-      await createEnrollment({
+        await createEnrollment({
         studentId: student.data._id,
-        courseId,
+        courseIds: [courseId],
         paymentId: session.id,
         amount: session.amount_total! / 100, // Convert from cents to dollars
       });
