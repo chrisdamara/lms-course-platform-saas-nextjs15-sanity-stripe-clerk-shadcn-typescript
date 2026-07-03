@@ -11,7 +11,7 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: Request) {
-  try {
+    try {
     const body = await req.text();
     const headersList = await headers();
     const signature = headersList.get("stripe-signature");
@@ -39,10 +39,11 @@ export async function POST(req: Request) {
       const session = event.data.object as Stripe.Checkout.Session;
 
       // Get the courseId and userId from the metadata
-      const courseId = session.metadata?.courseId;
+      if (!session.metadata?.courseIds) throw new Error(`Something went wrong. Invalid metadata on session: ${session.id}`)
+      const courseIds = JSON.parse(session.metadata?.courseIds);
       const userId = session.metadata?.userId;
 
-      if (!courseId || !userId) {
+      if (!courseIds?.length || !userId) {
         return new NextResponse("Missing metadata", { status: 400 });
       }
 
@@ -55,7 +56,7 @@ export async function POST(req: Request) {
       // Create an enrollment record in Sanity
       await createEnrollment({
         studentId: student.data._id,
-        courseId,
+        courseIds,
         paymentId: session.id,
         amount: session.amount_total! / 100, // Convert from cents to dollars
       });

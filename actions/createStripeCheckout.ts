@@ -9,17 +9,85 @@ import { createStudentIfNotExists } from "@/sanity/lib/student/createStudentIfNo
 import { clerkClient } from "@clerk/nextjs/server";
 import { createEnrollment } from "@/sanity/lib/student/createEnrollment";
 
-export async function createStripeCheckout(courseId: string, userId: string) {
+import { LineItem } from '@/types/stripe-checkout'
+import { Course } from '@/types/courses'
+
+const throwIncompleteDataError = (course: Course) => {
+    console.error("Course minimal data incomplete for: ", course);
+    throw new Error("Course title or slug is missing")
+}
+
+const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem => {
+    const { title, description, image, price, slug } = course
+    let img = undefined
+    try {
+        if (image) img = urlFor(image).url()
+    } catch { /* intentionally unhandled */ }
+
+    if (!title || !slug?.current) throwIncompleteDataError(course)
+
+    const productData = {
+        name: title,
+        description,
+        image: img,
+    }
+    return {
+        price_data: {
+            currency: options.currency,
+            product_data: productData,
+            unit_amount_in_cents: Math.round(price * 100)
+        },
+        quantity: 1
+    }
+}
+const makeSummary = (lineItems: LineItem[]) => {
+    const totalPriceInCents = lineItems.reduce((accumulator, { price_data }) => accumulator + price_data.unit_amount_in_cents, 0)
+    return {
+        total_price_whole_currency: totalPriceInCents / 100,
+        total_items: lineItems.length,
+    }
+}
+const makeLineItems = (courses: Course[]) => {
+    const lineItems = courses.map(course => makeLineItem(course))
+    const summary = makeSummary(lineItems)
+    return {
+        line_items: lineItems,
+        summary
+    }
+}
+const getCourses = async(courseIds: string[]) => {
+    console.log("Fetching course from Sanity...");
+    const getCoursesPromises = await Promise.allSettled(courseIds.map(id => getCourseById(id)))
+    if (getCoursesPromises.some(promise => promise.status !== 'fulfilled' || !promise?.value)) {
+        console.error("Error loading one of these courses: ", courseIds)
+        throw new Error("We couldn't find 1 or more of the courses that you are looking for")
+    }
+    const courses =  getCoursesPromises.map(promise => {
+        if (promise.status !== 'rejected') return promise.value
+    })
+    if (!courses.length) {
+        console.error("Courses not found");
+        throw new Error("Courses not found");
+    }
+    console.log("Courses fetched")
+    return courses
+
+}
+
+export async function createStripeCheckout(courseIds: string[], userId: string) {
   try {
     console.log("=== Starting createStripeCheckout ===");
-    console.log("courseId:", courseId);
+    console.log("courseIds:", courseIds);
     console.log("userId:", userId);
     console.log("baseUrl:", baseUrl);
 
     // 1. Query course details from Sanity
-    console.log("Fetching course from Sanity...");
-    const course = await getCourseById(courseId);
-    console.log("Course fetched:", course ? "SUCCESS" : "FAILED");
+    const courses = await getCourses(courseIds)
+    const courseSlugs = courses.map((course) => course?.slug)
+    if (!courseSlugs.some(s => !s?.current)) {
+      console.error("Course minimal data incomplete:");
+      throw new Error("Course title or slug is missing");
+    }
 
     console.log("Fetching Clerk user...");
     const clerkClientInstance = await clerkClient();
@@ -32,11 +100,6 @@ export async function createStripeCheckout(courseId: string, userId: string) {
     if (!emailAddresses || !email) {
       console.error("User details not found");
       throw new Error("User details not found");
-    }
-
-    if (!course) {
-      console.error("Course not found");
-      throw new Error("Course not found");
     }
 
     // mid step - create a user in sanity if it doesn't exist
@@ -56,45 +119,19 @@ export async function createStripeCheckout(courseId: string, userId: string) {
     }
 
     // 2. Validate course data and prepare price for Stripe
-    console.log("Course price:", course.price);
-    if (!course.price && course.price !== 0) {
-      console.error("Course price is not set");
-      throw new Error("Course price is not set");
-    }
-    const priceInCents = Math.round(course.price * 100);
-    console.log("Price in cents:", priceInCents);
+    const lineItems = makeLineItems(courses as Course[]);
 
     // if course is free, create enrollment and redirect to course page (BYPASS STRIPE CHECKOUT)
-    if (priceInCents === 0) {
+    if (lineItems.summary.total_price_whole_currency === 0) {
       console.log("Free course - creating enrollment directly");
-      await createEnrollment({
+        await createEnrollment({
         studentId: user._id,
-        courseId: course._id,
+        courseIds: courseIds.map(courseId => courseId),
         paymentId: "free",
         amount: 0,
       });
 
-      return { url: `/courses/${course.slug?.current}` };
-    }
-
-    const { title, description, image, slug } = course;
-
-    if (!title || !slug?.current) {
-      console.error("Course minimal data incomplete:", { title, slug });
-      throw new Error("Course title or slug is missing");
-    }
-
-    const productData: any = {
-      name: title,
-    };
-
-    if (description) {
-      productData.description = description;
-    }
-
-    const courseImageUrl = image ? urlFor(image).url() : undefined;
-    if (courseImageUrl) {
-      productData.images = [courseImageUrl];
+      return { url: `/courses/${courseSlugs[0]?.current}` };
     }
 
     // 3. Create and configure Stripe Checkout Session with course details
@@ -102,21 +139,12 @@ export async function createStripeCheckout(courseId: string, userId: string) {
     console.log("Stripe key exists:", !!process.env.STRIPE_SECRET_KEY);
     
     const session = await stripe.checkout.sessions.create({
-      line_items: [
-        {
-          price_data: {
-            currency: "usd",
-            product_data: productData,
-            unit_amount: priceInCents,
-          },
-          quantity: 1,
-        },
-      ],
+      ...lineItems,
       mode: "payment",
-      success_url: `${baseUrl}/courses/${slug.current}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/courses/${slug.current}?canceled=true`,
+      success_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?canceled=true`,
       metadata: {
-        courseId: course._id,
+        courseIds: JSON.stringify(courseIds),
         userId: userId,
       },
     });

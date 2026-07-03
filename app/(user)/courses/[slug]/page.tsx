@@ -44,7 +44,7 @@ export default async function CoursePage({ params, searchParams }: CoursePagePro
         if (student.data && !isAlreadyEnrolled) {
           await createEnrollment({
             studentId: student.data._id,
-            courseId: course._id,
+            courseIds: [course._id],
             paymentId: session.id,
             amount: (session.amount_total ?? 0) / 100,
           });
@@ -109,7 +109,7 @@ export default async function CoursePage({ params, searchParams }: CoursePagePro
               <div className="text-3xl font-bold text-white mb-4">
                 {course.price === 0 ? "Free" : `$${course.price}`}
               </div>
-              <EnrollButton courseId={course._id} isEnrolled={isEnrolled} />
+              <EnrollButton courseIds={[course._id]} isEnrolled={isEnrolled} />
             </div>
           </div>
         </div>
