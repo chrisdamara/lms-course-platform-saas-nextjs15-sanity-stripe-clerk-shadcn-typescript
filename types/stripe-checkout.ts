@@ -1,13 +1,13 @@
 export interface ProductData {
     name: string;
     description: string | undefined;
-    image: string | undefined;
+    images: string | undefined;
 }
 
 export interface PriceData {
     currency: string;
     product_data: ProductData;
-    unit_amount_in_cents: number;
+    unit_amount: number;
 }
 
 export interface LineItem {

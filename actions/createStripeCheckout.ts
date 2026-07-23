@@ -18,10 +18,10 @@ const throwIncompleteDataError = (course: Course) => {
 }
 
 const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem => {
-    const { title, description, image, price, slug } = course
+    const { title, description, images, price, slug } = course
     let img = undefined
     try {
-        if (image) img = urlFor(image).url()
+        if (images) img = urlFor(images).url()
     } catch { /* intentionally unhandled */ }
 
     if (!title || !slug?.current) throwIncompleteDataError(course)
@@ -29,32 +29,35 @@ const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem =
     const productData = {
         name: title,
         description,
-        image: img,
+        images: img,
     }
     return {
         price_data: {
             currency: options.currency,
             product_data: productData,
-            unit_amount_in_cents: Math.round(price * 100)
+            unit_amount: Math.round(price * 100)
         },
         quantity: 1
     }
 }
-const makeSummary = (lineItems: LineItem[]) => {
-    const totalPriceInCents = lineItems.reduce((accumulator, { price_data }) => accumulator + price_data.unit_amount_in_cents, 0)
-    return {
-        total_price_whole_currency: totalPriceInCents / 100,
-        total_items: lineItems.length,
-    }
-}
+
 const makeLineItems = (courses: Course[]) => {
     const lineItems = courses.map(course => makeLineItem(course))
-    const summary = makeSummary(lineItems)
     return {
         line_items: lineItems,
-        summary
     }
 }
+
+const makeSummary = (lineItems: LineItem[], total: number, userId: string) => {
+    return JSON.stringify({
+        total_price: total,
+        quantity: lineItems.length,
+        line_items: lineItems,
+        purchase_date: Date.now(),
+        user_id: userId
+    })
+}
+
 const getCourses = async(courseIds: string[]) => {
     console.log("Fetching course from Sanity...");
     const getCoursesPromises = await Promise.allSettled(courseIds.map(id => getCourseById(id)))
@@ -84,10 +87,6 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     // 1. Query course details from Sanity
     const courses = await getCourses(courseIds)
     const courseSlugs = courses.map((course) => course?.slug)
-    if (!courseSlugs.some(s => !s?.current)) {
-      console.error("Course minimal data incomplete:");
-      throw new Error("Course title or slug is missing");
-    }
 
     console.log("Fetching Clerk user...");
     const clerkClientInstance = await clerkClient();
@@ -122,7 +121,8 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     const lineItems = makeLineItems(courses as Course[]);
 
     // if course is free, create enrollment and redirect to course page (BYPASS STRIPE CHECKOUT)
-    if (lineItems.summary.total_price_whole_currency === 0) {
+    const total = lineItems.line_items.reduce((accumulator, { price_data }) => accumulator + price_data.unit_amount, 0)
+    if (total === 0) {
       console.log("Free course - creating enrollment directly");
         await createEnrollment({
         studentId: user._id,
@@ -144,8 +144,7 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
       success_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?canceled=true`,
       metadata: {
-        courseIds: JSON.stringify(courseIds),
-        userId: userId,
+        summary: makeSummary(lineItems.line_items, total, user.id)
       },
     });
 
@@ -153,7 +152,7 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     console.log("Session URL:", session.url);
 
     // 4. Return checkout session URL for client redirect
-    return { url: session.url };
+    return { url: session.url, session_data: session.metadata };
   } catch (error) {
     console.error("=== ERROR in createStripeCheckout ===");
     console.error("Error type:", error instanceof Error ? error.constructor.name : typeof error);

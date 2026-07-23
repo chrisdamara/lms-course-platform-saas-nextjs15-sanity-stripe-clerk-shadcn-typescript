@@ -23,10 +23,10 @@ function EnrollButton({
       try {
         const userId = user?.id;
         if (!userId) return;
-
-        const { url } = await createStripeCheckout(courseIds, userId);
-        if (url) {
-          router.push(url);
+        const seesion = await createStripeCheckout(courseIds, userId);
+        if (seesion.url) {
+          router.push(seesion.url);
+          // TODO handle session.session_data here
         }
       } catch (error) {
         console.error("Error in handleEnroll:", error);
