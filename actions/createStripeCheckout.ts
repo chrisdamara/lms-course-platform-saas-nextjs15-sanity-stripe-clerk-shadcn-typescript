@@ -35,8 +35,8 @@ const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem =
         price_data: {
             currency: options.currency,
             product_data: productData,
+            unit_amount: Math.round(price * 100),
         },
-        unit_amount: Math.round(price * 100),
         quantity: 1
     }
 }
@@ -116,9 +116,9 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
 
     // 2. Validate course data and prepare price for Stripe
     const lineItems = makeLineItems(courses as Course[]);
-
+console.log({lineItems: JSON.stringify(lineItems)})
     // if course is free, create enrollment and redirect to course page (BYPASS STRIPE CHECKOUT)
-    const total = lineItems.reduce((accumulator, { unit_amount }) => accumulator + unit_amount, 0)
+    const total = lineItems.reduce((accumulator, { price_data }) => accumulator + price_data.unit_amount, 0)
     if (total === 0) {
       console.log("Free course - creating enrollment directly");
         await createEnrollment({
