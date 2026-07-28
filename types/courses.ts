@@ -11,5 +11,5 @@ export interface Course {
     slug: Slug;
     title: string;
     description?: string;
-    images?: string | null | undefined;
+    images?: string[] | null | undefined;
 }

@@ -19,9 +19,9 @@ const throwIncompleteDataError = (course: Course) => {
 
 const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem => {
     const { title, description, images, price, slug } = course
-    let img = undefined
+    let imgUrls = undefined
     try {
-        if (images) img = urlFor(images).url()
+        if (images) imgUrls = images.map(img => urlFor(img).url())
     } catch { /* intentionally unhandled */ }
 
     if (!title || !slug?.current) throwIncompleteDataError(course)
@@ -29,23 +29,20 @@ const makeLineItem = (course: Course, options = { currency: 'usd' }): LineItem =
     const productData = {
         name: title,
         description,
-        images: img,
+        images: imgUrls,
     }
     return {
         price_data: {
             currency: options.currency,
             product_data: productData,
-            unit_amount: Math.round(price * 100)
         },
+        unit_amount: Math.round(price * 100),
         quantity: 1
     }
 }
 
 const makeLineItems = (courses: Course[]) => {
-    const lineItems = courses.map(course => makeLineItem(course))
-    return {
-        line_items: lineItems,
-    }
+    return courses.map(course => makeLineItem(course))
 }
 
 const makeSummary = (lineItems: LineItem[], total: number, userId: string) => {
@@ -121,7 +118,7 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     const lineItems = makeLineItems(courses as Course[]);
 
     // if course is free, create enrollment and redirect to course page (BYPASS STRIPE CHECKOUT)
-    const total = lineItems.line_items.reduce((accumulator, { price_data }) => accumulator + price_data.unit_amount, 0)
+    const total = lineItems.reduce((accumulator, { unit_amount }) => accumulator + unit_amount, 0)
     if (total === 0) {
       console.log("Free course - creating enrollment directly");
         await createEnrollment({
@@ -139,12 +136,12 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     console.log("Stripe key exists:", !!process.env.STRIPE_SECRET_KEY);
     
     const session = await stripe.checkout.sessions.create({
-      ...lineItems,
+      line_items: lineItems,
       mode: "payment",
       success_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?canceled=true`,
       metadata: {
-        summary: makeSummary(lineItems.line_items, total, user.id)
+        summary: makeSummary(lineItems, total, user.id)
       },
     });
 
