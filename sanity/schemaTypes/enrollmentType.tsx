@@ -1,5 +1,13 @@
 import Image from "next/image";
 import { defineField, defineType } from "sanity";
+import { Course } from "@/types/courses"
+
+interface PrepareProps {
+    courses: Course[];
+    studentFirstName: string;
+    studentLastName: string;
+    studentImage: string;
+}
 
 export const enrollmentType = defineType({
   name: "enrollment",
@@ -48,8 +56,8 @@ export const enrollmentType = defineType({
       studentLastName: "student.lastName",
       studentImage: "student.imageUrl",
     },
-    prepare({ courses, studentFirstName, studentLastName, studentImage }) {
-      const courseTitles = courses.map((c: { title: string }) => c.title).join(", ") || "No courses yet"
+    prepare({ courses, studentFirstName, studentLastName, studentImage }: PrepareProps) {
+      const courseTitles = courses.map(c => c.title).join(", ") || "No courses yet"
         return {
         title: `${studentFirstName} ${studentLastName}`,
         subtitle: courseTitles,

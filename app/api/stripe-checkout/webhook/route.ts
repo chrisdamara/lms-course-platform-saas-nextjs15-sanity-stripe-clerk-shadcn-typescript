@@ -11,8 +11,6 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
 const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET!;
 
 export async function POST(req: Request) {
-  // TODO: need to implement courseId as an array to accommodate the changes made on the multiple-courses-on-enrollment branch
-    // see branch accommodate-multiple-course-purchase-in-stripe-checkou
     try {
     const body = await req.text();
     const headersList = await headers();
@@ -35,15 +33,17 @@ export async function POST(req: Request) {
         status: 400,
       });
     }
+
     // Handle the checkout.session.completed event
     if (event.type === "checkout.session.completed") {
       const session = event.data.object as Stripe.Checkout.Session;
 
       // Get the courseId and userId from the metadata
-      const courseId = session.metadata?.courseId;
+      if (!session.metadata?.courseIds) throw new Error(`Something went wrong. Invalid metadata on session: ${session.id}`)
+      const courseIds = JSON.parse(session.metadata?.courseIds);
       const userId = session.metadata?.userId;
 
-      if (!courseId || !userId) {
+      if (!courseIds?.length || !userId) {
         return new NextResponse("Missing metadata", { status: 400 });
       }
 
@@ -54,9 +54,9 @@ export async function POST(req: Request) {
       }
 
       // Create an enrollment record in Sanity
-        await createEnrollment({
+      await createEnrollment({
         studentId: student.data._id,
-        courseIds: [courseId],
+        courseIds,
         paymentId: session.id,
         amount: session.amount_total! / 100, // Convert from cents to dollars
       });

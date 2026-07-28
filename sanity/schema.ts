@@ -17,7 +17,7 @@ export const schema: { types: SchemaTypeDefinition[] } = {
     lessonType,
     instructorType,
     studentType,
-    enrollmentType,
+    enrollmentType as SchemaTypeDefinition,
     categoryType,
     lessonCompletionType,
   ],
