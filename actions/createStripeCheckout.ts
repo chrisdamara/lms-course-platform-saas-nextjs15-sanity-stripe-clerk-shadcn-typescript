@@ -89,7 +89,7 @@ export async function createStripeCheckout(courseIds: string[], userId: string) 
     const clerkClientInstance = await clerkClient();
     const clerkUser = await clerkClientInstance.users.getUser(userId);
     console.log("Clerk user fetched:", clerkUser ? "SUCCESS" : "FAILED");
-    
+
     const { emailAddresses, firstName, lastName, imageUrl } = clerkUser;
     const email = emailAddresses?.[0]?.emailAddress || clerkUser.primaryEmailAddress?.emailAddress;
 
@@ -134,14 +134,17 @@ console.log({lineItems: JSON.stringify(lineItems)})
     // 3. Create and configure Stripe Checkout Session with course details
     console.log("Creating Stripe checkout session...");
     console.log("Stripe key exists:", !!process.env.STRIPE_SECRET_KEY);
-    
+
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode: "payment",
-      success_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${baseUrl}/courses/${courseSlugs[0]?.current}?canceled=true`,
+      success_url: `${baseUrl}/checkout/success/?session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${baseUrl}/checkout/unsuccessful/?session_id={CHECKOUT_SESSION_ID}?canceled=true`,
       metadata: {
-        summary: makeSummary(lineItems, total, user.id)
+        courseIds: JSON.stringify(courseIds),
+        userId: userId,
+        totalAmount: total.toString(),
+        summary: makeSummary(lineItems, total, user.id),
       },
     });
 

@@ -35,6 +35,10 @@ function EnrollButton({
     });
   };
 
+  const navigateToEnrollment = () => {
+    router.push(`/enrollment/${courseIds[0]}`)
+  }
+
   // Show loading state while checking user is loading
   if (!isUserLoaded || isPending) {
     return (
@@ -69,7 +73,7 @@ function EnrollButton({
         }
       `}
       disabled={!user?.id || isPending}
-      onClick={() => handleEnroll(courseIds)}
+      onClick={() => navigateToEnrollment()}
     >
       {!user?.id ? (
         <span className={`${isPending ? "opacity-0" : "opacity-100"}`}>
